@@ -1,0 +1,189 @@
+{
+    "name": "Active Alert - Jerusalem",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "incoming-alert",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [-820, -140],
+        "id": "1",
+        "name": "Webhook",
+        "webhookId": "00000000-0000-0000-0000-000000000001"
+      },
+      {
+        "parameters": {
+          "userKey": "YOUR_PUSHOVER_USER_KEY",
+          "message": "Alert for monitored region",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.pushover",
+        "typeVersion": 1,
+        "position": [-500, -320],
+        "id": "2",
+        "name": "Pushover",
+        "credentials": {
+          "pushoverApi": {
+            "id": "1",
+            "name": "MyPushover"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "url": "https://example.com/api/search",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "query",
+                "value": "rocket alert"
+              },
+              {
+                "name": "queryType",
+                "value": "Latest"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [-560, -100],
+        "id": "3",
+        "name": "HTTP Request",
+        "credentials": {
+          "httpBearerAuth": {
+            "id": "2",
+            "name": "MyBearerToken"
+          },
+          "httpHeaderAuth": {
+            "id": "3",
+            "name": "MyHeaderAuth"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Assume tweets array is in items[0].json.tweets\nconst allTweets = items[0].json.tweets.slice(0, 20);\nconst formatted = allTweets.map(tweet => {\n  const author = tweet.author?.userName || \"unknown\";\n  const time = tweet.createdAt || \"unknown time\";\n  const url = tweet.url || \"\";\n  const text = tweet.text.replace(/\\n/g, ' ');\n  return `@${author} at ${time}:\\n\"${text}\"\\n${url}`;\n});\nreturn [{ json: { combined_text: formatted.join(\"\\n\\n\") } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [-340, -100],
+        "id": "4",
+        "name": "Code"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Alert triggered in monitored district. Source data:\n\n{{ $json.combined_text }}",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "You are summarizing emergency alerts using recent social media data. Return a JSON with two HTML strings: `short_summary` and `detailed_report`. No extra commentary."
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.9,
+        "position": [-140, -200],
+        "id": "5",
+        "name": "AI Agent"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "gpt-4o",
+            "mode": "list",
+            "cachedResultName": "gpt-4o"
+          },
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [-180, 100],
+        "id": "6",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "4",
+            "name": "MyOpenAI"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sendTo": "alerts@example.com",
+          "subject": "Alert Notification",
+          "message": "=<!DOCTYPE html>\n<html>\n  <body>\n    <h2>🚨 Immediate Alert Summary</h2>\n    <div>{{ $json.output.summary_report.short_summary }}</div>\n    <hr />\n    <h3>📰 More Information</h3>\n    <div>{{ $json.output.summary_report.detailed_report }}</div>\n  </body>\n</html>",
+          "options": {
+            "senderName": "Alert System"
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.1,
+        "position": [240, -160],
+        "id": "7",
+        "name": "Gmail",
+        "webhookId": "00000000-0000-0000-0000-000000000002",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "5",
+            "name": "MyGmailOAuth"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsonSchemaExample": "{\n  \"summary_report\": {\n    \"short_summary\": \"<p>Alert detected in target region.</p>\",\n    \"detailed_report\": \"<p>Additional details from social sources indicate possible threat activity. Monitoring ongoing.</p>\"\n  }\n}"
+        },
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.2,
+        "position": [100, 60],
+        "id": "8",
+        "name": "Structured Output Parser"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [{ "node": "Pushover", "type": "main", "index": 0 }],
+          [{ "node": "HTTP Request", "type": "main", "index": 0 }]
+        ]
+      },
+      "HTTP Request": {
+        "main": [[{ "node": "Code", "type": "main", "index": 0 }]]
+      },
+      "Code": {
+        "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]]
+      },
+      "Structured Output Parser": {
+        "ai_outputParser": [[{ "node": "AI Agent", "type": "ai_outputParser", "index": 0 }]]
+      },
+      "AI Agent": {
+        "main": [[{ "node": "Gmail", "type": "main", "index": 0 }]]
+      }
+    },
+    "active": true,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "00000000-0000-0000-0000-000000000003",
+    "id": "00000000-0000-0000-0000-000000000004",
+    "tags": [
+      {
+        "createdAt": "2025-01-01T00:00:00.000Z",
+        "updatedAt": "2025-01-01T00:00:00.000Z",
+        "id": "tag-1",
+        "name": "Alerting"
+      }
+    ]
+  }
+  
