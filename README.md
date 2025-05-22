@@ -54,11 +54,43 @@ The workflow requires configuration of the following services:
 - Email service for situation report distribution
 - AI service for analysis and report generation
 
-## Files
+## Project Directory
 
-- `automation/workflow.json`: The main n8n workflow definition
-- `scripts/transform.js`: JavaScript transformation for processing Twitter API data
-- `prompts/`: Contains AI agent prompts for situation analysis
+```
+/
+├── automation/
+│   └── workflow.json         # Main n8n workflow definition
+├── email-templates/
+│   ├── active-alert.html     # Template for active red alert notifications
+│   ├── early-warning-alert.html # Template for pre-emptive alerts
+│   └── safe.html            # Template for all-clear notifications
+├── prompts/
+│   ├── system-prompt.md     # AI agent system instructions
+│   └── example-user-prompt.md # Example queries for the AI agent
+├── scripts/
+│   └── transform.js         # JavaScript for Twitter API data processing
+├── screenshots/
+│   ├── 1.png                # Workflow diagram
+│   └── red-alerts.jpg       # Red alert visualization
+└── twitterapiio_response_example.json # Example Twitter API response
+```
+
+## Component Description
+
+### Automation Workflow
+- `automation/workflow.json`: The main n8n workflow definition that orchestrates the entire process
+
+### Email Templates
+- `email-templates/active-alert.html`: HTML template for active red alert notifications
+- `email-templates/early-warning-alert.html`: HTML template for pre-emptive warning alerts
+- `email-templates/safe.html`: HTML template for all-clear notifications
+
+### AI Components
+- `prompts/system-prompt.md`: Instructions for the AI agent on how to analyze and report on alerts
+- `prompts/example-user-prompt.md`: Example queries demonstrating how to interact with the AI agent
+
+### Data Processing
+- `scripts/transform.js`: JavaScript transformation for processing Twitter API data into a format suitable for AI analysis
 
 ## Code Samples
 
