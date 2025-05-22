@@ -1,8 +1,20 @@
 # Oref GPT: AI Workflow For Immediate Info About Red Alerts In Israel (Social Media)
 
+![alt text](screenshots/red-alerts.jpg)
+
+[![n8n](https://img.shields.io/badge/n8n-Workflow-orange)](https://n8n.io/)
+[![Status](https://img.shields.io/badge/Status-Experimental-red)](#)
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-Integration-41BDF5)](https://www.home-assistant.io/)
+
+
+> ⚠️ **IMPORTANT WARNING**: This tool is provided for informational purposes only and should NOT be relied upon as a primary source for emergency preparedness or response. Always prioritize official government resources and emergency services for critical safety information. This is intended as a supplementary resource only.
+
+## Workflow Model
+
 ![alt text](screenshots/1.png)
 
 ## Overview
+
 
 Oref-GPT is an n8n automation workflow designed to process Red Alert notifications from Home Assistant and generate real-time situation reports during missile alerts in Israel. The system consists of two main workflow chains:
 
@@ -48,6 +60,53 @@ The workflow requires configuration of the following services:
 - `scripts/transform.js`: JavaScript transformation for processing Twitter API data
 - `prompts/`: Contains AI agent prompts for situation analysis
 
+## Code Samples
+
+### Webhook Configuration (n8n)
+
+```json
+{
+  "parameters": {
+    "httpMethod": "POST",
+    "path": "incoming-alert",
+    "options": {}
+  },
+  "type": "n8n-nodes-base.webhook",
+  "name": "Webhook"
+}
+```
+
+### Twitter Data Transformation Script
+
+```javascript
+// Grab the first input item (assuming your input has one item with a "tweets" array)
+const allTweets = items[0].json.tweets.slice(0, 20); // top 20 tweets only
+
+// Map and format them into a readable string
+const formatted = allTweets.map(tweet => {
+  const author = tweet.author?.userName || "unknown";
+  const time = tweet.createdAt || "unknown time";
+  const url = tweet.url || "";
+  const text = tweet.text.replace(/\n/g, ' '); // clean up newlines
+  return `@${author} at ${time}:\n"${text}"\n${url}`;
+});
+
+// Join all into one string
+const combinedText = formatted.join("\n\n");
+
+return [{
+  json: {
+    combined_text: combinedText
+  }
+}];
+```
+
+### AI System Prompt Example
+
+```markdown
+You are a helpful assistant whose task is to help the user to gain quick situational awareness into the cause of missile fire and security events at various locations in Israel. You will receive a prompt from the user specifying the specific location in Israel where a red alert has been received. Upon receiving this input, your task is to search social media and other breaking news sources in order to find initial information as to the source of the rocket fire (or other alert type).
+```
+
 ## Setup
 
 To use this automation:
@@ -62,3 +121,13 @@ To use this automation:
 This workflow handles sensitive alert information. 
 
 Ensure all API keys and credentials are properly secured and that data transmission is encrypted.
+
+## Disclaimer
+
+**This tool is NOT a replacement for official emergency alerts or government resources.** It is designed as a supplementary information source that attempts to provide context about security incidents after they have been officially reported. Always follow official guidance from:
+
+- [Home Front Command (Pikud HaOref)](https://www.oref.org.il/)
+- Local emergency services
+- Government emergency broadcasts
+
+The reliability of information gathered from social media sources cannot be guaranteed, especially during emergency situations. Use this tool responsibly and always prioritize official channels for critical safety decisions.
